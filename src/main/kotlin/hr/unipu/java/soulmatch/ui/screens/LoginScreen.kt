@@ -12,11 +12,15 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import hr.unipu.java.soulmatch.Screen
+import hr.unipu.java.soulmatch.model.AppData
 
 @Composable
 fun LoginScreen(onNavigate: (Screen) -> Unit) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+
+    var showDialog by remember { mutableStateOf(false) }
+    var dialogMessage by remember { mutableStateOf("") }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(32.dp),
@@ -48,7 +52,25 @@ fun LoginScreen(onNavigate: (Screen) -> Unit) {
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
-            onClick = { /* TODO: Logika za prijavu */ onNavigate(Screen.FindMatch) },
+            onClick = {
+                val cleanEmail = email.trim().lowercase()
+
+                if (cleanEmail.isBlank() || password.isBlank()) {
+                    dialogMessage = "Email and password cannot be empty."
+                    showDialog = true
+                    return@Button
+                }
+
+                val user = AppData.users.find { it.email == cleanEmail && it.password == password }
+
+                if (user != null) {
+                    println("SUCCESS: Logged in as: $user")
+                    onNavigate(Screen.FindMatch)
+                } else {
+                    dialogMessage = "Invalid email or password. Please try again."
+                    showDialog = true
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFE57373))
         ) {
@@ -62,5 +84,21 @@ fun LoginScreen(onNavigate: (Screen) -> Unit) {
             color = Color(0xFFE57373),
             modifier = Modifier.clickable { onNavigate(Screen.Signup) }
         )
+
+        if (showDialog) {
+            AlertDialog(
+                onDismissRequest = { showDialog = false },
+                title = { Text("Login Error") },
+                text = { Text(dialogMessage) },
+                confirmButton = {
+                    Button(
+                        onClick = { showDialog = false },
+                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFE57373))
+                    ) {
+                        Text("OK", color = Color.White)
+                    }
+                }
+            )
+        }
     }
 }

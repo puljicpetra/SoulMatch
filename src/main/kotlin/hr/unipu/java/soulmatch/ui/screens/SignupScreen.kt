@@ -2,10 +2,7 @@ package hr.unipu.java.soulmatch.ui.screens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Button
-import androidx.compose.material.ButtonDefaults
-import androidx.compose.material.OutlinedTextField
-import androidx.compose.material.Text
+import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -15,12 +12,18 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import hr.unipu.java.soulmatch.Screen
+import hr.unipu.java.soulmatch.model.AppData
+import hr.unipu.java.soulmatch.model.User
 
 @Composable
 fun SignupScreen(onNavigate: (Screen) -> Unit) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var repeatPassword by remember { mutableStateOf("") }
+
+    var showDialog by remember { mutableStateOf(false) }
+    var dialogMessage by remember { mutableStateOf("") }
+    var isErrorDialog by remember { mutableStateOf(true) }
 
     Column(
         modifier = Modifier.fillMaxSize().padding(32.dp),
@@ -39,9 +42,7 @@ fun SignupScreen(onNavigate: (Screen) -> Unit) {
             label = { Text("Email*") },
             modifier = Modifier.fillMaxWidth()
         )
-
         Spacer(modifier = Modifier.height(16.dp))
-
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
@@ -49,9 +50,7 @@ fun SignupScreen(onNavigate: (Screen) -> Unit) {
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
         )
-
         Spacer(modifier = Modifier.height(16.dp))
-
         OutlinedTextField(
             value = repeatPassword,
             onValueChange = { repeatPassword = it },
@@ -63,7 +62,50 @@ fun SignupScreen(onNavigate: (Screen) -> Unit) {
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
-            onClick = { /* TODO: Logika za registraciju */ onNavigate(Screen.FindMatch) },
+            onClick = {
+                val cleanEmail = email.trim().lowercase()
+
+                if (cleanEmail.isBlank() || password.isBlank()) {
+                    dialogMessage = "Email and password cannot be empty."
+                    isErrorDialog = true
+                    showDialog = true
+                    return@Button
+                }
+                if (!cleanEmail.contains("@") || !cleanEmail.substringAfter("@").contains(".")) {
+                    dialogMessage = "Please enter a valid email address."
+                    isErrorDialog = true
+                    showDialog = true
+                    return@Button
+                }
+                if (password.length < 8) {
+                    dialogMessage = "Password must be at least 8 characters long."
+                    isErrorDialog = true
+                    showDialog = true
+                    return@Button
+                }
+                if (password != repeatPassword) {
+                    dialogMessage = "Passwords do not match."
+                    isErrorDialog = true
+                    showDialog = true
+                    return@Button
+                }
+                if (AppData.users.any { it.email == cleanEmail }) {
+                    dialogMessage = "A user with this email already exists."
+                    isErrorDialog = true
+                    showDialog = true
+                    return@Button
+                }
+
+                val newUser = User(email = cleanEmail, password = password)
+                AppData.users.add(newUser)
+                AppData.saveUsers()
+
+                println("SUCCESS: User registered: $newUser")
+
+                dialogMessage = "Registration successful!"
+                isErrorDialog = false
+                showDialog = true
+            },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFE57373))
         ) {
@@ -77,5 +119,31 @@ fun SignupScreen(onNavigate: (Screen) -> Unit) {
             color = Color(0xFFE57373),
             modifier = Modifier.clickable { onNavigate(Screen.Login) }
         )
+
+        if (showDialog) {
+            AlertDialog(
+                onDismissRequest = {
+                    showDialog = false
+                    if (!isErrorDialog) {
+                        onNavigate(Screen.ProfileSetup)
+                    }
+                },
+                title = { Text(if (isErrorDialog) "Registration Error" else "Success") },
+                text = { Text(dialogMessage) },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showDialog = false
+                            if (!isErrorDialog) {
+                                onNavigate(Screen.ProfileSetup)
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFE57373))
+                    ) {
+                        Text("OK", color = Color.White)
+                    }
+                }
+            )
+        }
     }
 }
