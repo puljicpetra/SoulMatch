@@ -7,6 +7,8 @@ import java.io.File
 object AppData {
     val users = mutableListOf<User>()
 
+    var currentUser: User? = null
+
     private val userFile = File("users.json")
 
     fun saveUsers() {

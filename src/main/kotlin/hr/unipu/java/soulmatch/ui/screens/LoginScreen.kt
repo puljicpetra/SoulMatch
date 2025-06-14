@@ -29,18 +29,14 @@ fun LoginScreen(onNavigate: (Screen) -> Unit) {
     ) {
         Text("Sign in", fontSize = 32.sp, fontWeight = FontWeight.Bold)
         Text("to your account", fontSize = 18.sp, color = Color.Gray)
-
         Spacer(modifier = Modifier.height(32.dp))
-
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
             label = { Text("Email*") },
             modifier = Modifier.fillMaxWidth()
         )
-
         Spacer(modifier = Modifier.height(16.dp))
-
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
@@ -48,7 +44,6 @@ fun LoginScreen(onNavigate: (Screen) -> Unit) {
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
         )
-
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
@@ -64,7 +59,9 @@ fun LoginScreen(onNavigate: (Screen) -> Unit) {
                 val user = AppData.users.find { it.email == cleanEmail && it.password == password }
 
                 if (user != null) {
-                    println("SUCCESS: Logged in as: $user")
+                    AppData.currentUser = user
+
+                    println("SUCCESS: Logged in as: ${AppData.currentUser}")
                     onNavigate(Screen.FindMatch)
                 } else {
                     dialogMessage = "Invalid email or password. Please try again."

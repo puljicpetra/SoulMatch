@@ -7,5 +7,14 @@ import java.util.UUID
 data class User(
     val id: String = UUID.randomUUID().toString(),
     val email: String,
-    val password: String
+    val password: String,
+
+    var name: String = "",
+    var age: Int = 0,
+    var bio: String = "",
+
+    var profilePictureUrl: String = "",
+    var imageUrls: List<String> = emptyList(),
+
+    var interests: List<String> = emptyList()
 )

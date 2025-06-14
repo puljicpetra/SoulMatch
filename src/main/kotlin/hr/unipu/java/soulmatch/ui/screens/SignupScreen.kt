@@ -30,12 +30,9 @@ fun SignupScreen(onNavigate: (Screen) -> Unit) {
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-
         Text("Sign up", fontSize = 32.sp, fontWeight = FontWeight.Bold)
         Text("Create an account", fontSize = 18.sp, color = Color.Gray)
-
         Spacer(modifier = Modifier.height(32.dp))
-
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
@@ -58,7 +55,6 @@ fun SignupScreen(onNavigate: (Screen) -> Unit) {
             visualTransformation = PasswordVisualTransformation(),
             modifier = Modifier.fillMaxWidth()
         )
-
         Spacer(modifier = Modifier.height(32.dp))
 
         Button(
@@ -98,9 +94,13 @@ fun SignupScreen(onNavigate: (Screen) -> Unit) {
 
                 val newUser = User(email = cleanEmail, password = password)
                 AppData.users.add(newUser)
+
+                AppData.currentUser = newUser
+
                 AppData.saveUsers()
 
                 println("SUCCESS: User registered: $newUser")
+                println("Current user is: ${AppData.currentUser}")
 
                 dialogMessage = "Registration successful!"
                 isErrorDialog = false
