@@ -1,38 +1,49 @@
 package hr.unipu.java.soulmatch.ui.screens
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.toComposeImageBitmap
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import hr.unipu.java.soulmatch.Screen
 import hr.unipu.java.soulmatch.model.AppData
-import org.jetbrains.skia.Image as SkiaImage
-import java.io.File
+import hr.unipu.java.soulmatch.ui.composables.Chip
+import hr.unipu.java.soulmatch.ui.composables.LikeDislikeButtons
+import hr.unipu.java.soulmatch.ui.composables.ProfileImage
 
 @Composable
 fun FindMatchScreen(onNavigate: (Screen) -> Unit) {
-    val potentialMatches = AppData.users.filter { it.id != AppData.currentUser?.id }
+    val currentUser = AppData.currentUser
+    if (currentUser == null) {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Error: Not logged in. Please restart.")
+        }
+        return
+    }
+
+    val sortedMatches = remember(AppData.users) {
+        AppData.users
+            .filter { it.id != currentUser.id }
+            .sortedByDescending { otherUser ->
+                currentUser.interests.intersect(otherUser.interests.toSet()).size
+            }
+    }
+
     var currentIndex by remember { mutableStateOf(0) }
     var menuExpanded by remember { mutableStateOf(false) }
-
 
     Scaffold(
         topBar = {
@@ -52,16 +63,12 @@ fun FindMatchScreen(onNavigate: (Screen) -> Unit) {
                             DropdownMenuItem(onClick = {
                                 menuExpanded = false
                                 onNavigate(Screen.MyProfile)
-                            }) {
-                                Text("My Profile")
-                            }
+                            }) { Text("My Profile") }
                             DropdownMenuItem(onClick = {
                                 menuExpanded = false
                                 AppData.currentUser = null
                                 onNavigate(Screen.Welcome)
-                            }) {
-                                Text("Log Out")
-                            }
+                            }) { Text("Log Out") }
                         }
                     }
                 }
@@ -72,90 +79,64 @@ fun FindMatchScreen(onNavigate: (Screen) -> Unit) {
             modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (potentialMatches.isNotEmpty() && currentIndex < potentialMatches.size) {
-                val userToShow = potentialMatches[currentIndex]
+            if (sortedMatches.isNotEmpty() && currentIndex < sortedMatches.size) {
+                val userToShow = sortedMatches[currentIndex]
 
                 Card(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                     elevation = 8.dp
                 ) {
                     Column(
-                        modifier = Modifier.padding(24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        if (userToShow.profilePictureUrl.isNotBlank()) {
-                            val bitmap = remember(userToShow.profilePictureUrl) {
-                                loadImageBitmap(File("src/main/resources/images/${userToShow.profilePictureUrl}"))
+                        ProfileImage(userToShow.profilePictureUrl, userToShow.name)
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(text = "${userToShow.name}, ${userToShow.age}", style = MaterialTheme.typography.h4.copy(fontWeight = FontWeight.Bold))
+
+                        if (userToShow.city.isNotBlank() || userToShow.country.isNotBlank()) {
+                            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
+                                Icon(Icons.Default.LocationOn, contentDescription = "Location", tint = Color.Gray, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(text = "${userToShow.city}, ${userToShow.country}", style = MaterialTheme.typography.body2, color = Color.Gray)
                             }
-                            if (bitmap != null) {
-                                Image(bitmap = bitmap, contentDescription = "${userToShow.name}'s profile picture", modifier = Modifier.size(150.dp).clip(CircleShape), contentScale = ContentScale.Crop)
-                            } else {
-                                ProfileImagePlaceholder()
-                            }
-                        } else {
-                            ProfileImagePlaceholder()
                         }
-                        Text(text = "${userToShow.name}, ${userToShow.age}", fontSize = 28.sp, fontWeight = FontWeight.Bold)
-                        Text(text = userToShow.bio, fontSize = 16.sp, modifier = Modifier.weight(1f))
+
+                        Divider(modifier = Modifier.padding(vertical = 16.dp))
+                        Text(text = userToShow.bio, style = MaterialTheme.typography.body1, modifier = Modifier.weight(1f))
+
+                        if (userToShow.interests.isNotEmpty()) {
+                            Text("Interests", style = MaterialTheme.typography.h6, modifier = Modifier.padding(top = 8.dp))
+                            LazyRow(
+                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
+                            ) {
+                                items(userToShow.interests) { interest ->
+                                    Chip(interest)
+                                }
+                            }
+                        }
                     }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    OutlinedButton(
-                        onClick = {
-                            println("Declined user: ${userToShow.name}")
-                            currentIndex++
-                        },
-                        modifier = Modifier.size(72.dp), shape = CircleShape, border = BorderStroke(2.dp, Color.Red)
-                    ) {
-                        Icon(Icons.Default.Clear, contentDescription = "Decline", tint = Color.Red, modifier = Modifier.size(36.dp))
+                LikeDislikeButtons(
+                    onDislike = {
+                        println("Declined user: ${userToShow.name}")
+                        currentIndex++
+                    },
+                    onLike = {
+                        println("Liked user: ${userToShow.name}")
+                        // TODO: Implementirati logiku za lajkanje i provjeru matcha
+                        currentIndex++
                     }
-                    Button(
-                        onClick = {
-                            println("Liked user: ${userToShow.name}")
-                            // TODO: Implement like logic
-                            currentIndex++
-                        },
-                        modifier = Modifier.size(72.dp), shape = CircleShape, colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF4CAF50))
-                    ) {
-                        Icon(Icons.Default.Done, contentDescription = "Like", tint = Color.White, modifier = Modifier.size(36.dp))
-                    }
-                }
+                )
             } else {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text("No more users to show. Come back later!", fontSize = 18.sp)
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun ProfileImagePlaceholder() {
-    Box(modifier = Modifier.size(150.dp).background(Color.LightGray, CircleShape)) {
-        Icon(
-            Icons.Default.Person,
-            contentDescription = "No profile picture",
-            modifier = Modifier.fillMaxSize(0.7f).align(Alignment.Center)
-        )
-    }
-}
-
-private fun loadImageBitmap(file: File): ImageBitmap? {
-    return try {
-        SkiaImage.makeFromEncoded(file.readBytes()).toComposeImageBitmap()
-    } catch (e: Exception) {
-        println("Error loading image for match screen: ${e.message}")
-        null
     }
 }
