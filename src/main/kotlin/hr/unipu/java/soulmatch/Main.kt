@@ -4,18 +4,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import hr.unipu.java.soulmatch.model.AppData
-import hr.unipu.java.soulmatch.ui.screens.LoginScreen
-import hr.unipu.java.soulmatch.ui.screens.ProfileSetupScreen
-import hr.unipu.java.soulmatch.ui.screens.SignupScreen
-import hr.unipu.java.soulmatch.ui.screens.WelcomeScreen
-import hr.unipu.java.soulmatch.ui.screens.FindMatchScreen
+import hr.unipu.java.soulmatch.ui.screens.*
 
 enum class Screen {
     Welcome,
     Login,
     Signup,
     ProfileSetup,
-    FindMatch
+    FindMatch,
+    MyProfile
 }
 
 fun main() = application {
@@ -40,6 +37,7 @@ fun main() = application {
             Screen.Login -> LoginScreen(onNavigate = onNavigate)
             Screen.ProfileSetup -> ProfileSetupScreen(onNavigate = onNavigate)
             Screen.FindMatch -> FindMatchScreen(onNavigate = onNavigate)
+            Screen.MyProfile -> MyProfileScreen(onNavigate = onNavigate)
 
             else -> WelcomeScreen(onNavigate = onNavigate)
         }
