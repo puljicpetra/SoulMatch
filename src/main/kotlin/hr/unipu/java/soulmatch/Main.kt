@@ -11,11 +11,7 @@ enum class Screen {
     Welcome,
     Login,
     Signup,
-    ProfileSetup,
-    FindMatch,
-    Messages,
-    Chat,
-    Settings
+    FindMatch
 }
 
 fun main() = application {
