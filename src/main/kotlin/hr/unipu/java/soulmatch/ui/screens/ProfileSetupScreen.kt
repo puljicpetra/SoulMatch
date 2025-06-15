@@ -14,19 +14,23 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import hr.unipu.java.soulmatch.Screen
+import hr.unipu.java.soulmatch.getAppDataDirectory
 import hr.unipu.java.soulmatch.loadImageBitmap
 import hr.unipu.java.soulmatch.model.AppData
 import hr.unipu.java.soulmatch.ui.composables.FileDialog
 import java.io.File
 
+
 @Composable
 fun ProfileSetupScreen(onNavigate: (Screen) -> Unit) {
+    // --- DIJAGNOSTIČKI LOG #1 ---
+    println("ProfileSetupScreen RECOMPOSING")
+
     val currentUser = AppData.currentUser
     if (currentUser == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -43,16 +47,8 @@ fun ProfileSetupScreen(onNavigate: (Screen) -> Unit) {
     var interests by remember { mutableStateOf(currentUser.interests.joinToString(", ")) }
 
     var selectedImageName by remember { mutableStateOf(currentUser.profilePictureUrl) }
-    var imageBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
     var showFileChooser by remember { mutableStateOf(false) }
 
-    LaunchedEffect(selectedImageName) {
-        if (selectedImageName.isNotBlank()) {
-            imageBitmap = loadImageBitmap(File("src/main/resources/images/$selectedImageName"))
-        } else {
-            imageBitmap = null
-        }
-    }
 
     Column(
         modifier = Modifier
@@ -65,8 +61,24 @@ fun ProfileSetupScreen(onNavigate: (Screen) -> Unit) {
         Text("Let others get to know you!", fontSize = 16.sp, color = Color.Gray)
         Spacer(modifier = Modifier.height(16.dp))
 
+        val imageBitmap = remember(selectedImageName) {
+            // --- DIJAGNOSTIČKI LOG #2 ---
+            println("--- SETUP: REMEMBER BLOCK re-calculating for image path: '$selectedImageName'")
+
+            if (selectedImageName.isNotBlank()) {
+                val bmp = loadImageBitmap(File(selectedImageName))
+
+                // --- DIJAGNOSTIČKI LOG #3 ---
+                println("--> SETUP: Bitmap loaded: ${if (bmp != null) "SUCCESS" else "FAILURE"}")
+
+                bmp
+            } else {
+                null
+            }
+        }
+
         if (imageBitmap != null) {
-            Image(bitmap = imageBitmap!!, contentDescription = "Profile Picture", modifier = Modifier.size(120.dp).clip(CircleShape), contentScale = ContentScale.Crop)
+            Image(bitmap = imageBitmap, contentDescription = "Profile Picture", modifier = Modifier.size(120.dp).clip(CircleShape), contentScale = ContentScale.Crop)
         } else {
             Box(modifier = Modifier.size(120.dp).background(Color.LightGray, CircleShape)) {
                 Icon(Icons.Default.Person, "Placeholder", modifier = Modifier.fillMaxSize(0.6f).align(Alignment.Center), tint = Color.White)
@@ -119,11 +131,24 @@ fun ProfileSetupScreen(onNavigate: (Screen) -> Unit) {
             onCloseRequest = { selectedFile: File? ->
                 showFileChooser = false
                 if (selectedFile != null) {
-                    val imageDir = File("src/main/resources/images")
-                    if (!imageDir.exists()) imageDir.mkdirs()
-                    val destinationFile = File(imageDir, selectedFile.name)
-                    selectedFile.copyTo(destinationFile, overwrite = true)
-                    selectedImageName = destinationFile.name
+                    try {
+                        val imageDir = File(getAppDataDirectory(), "images")
+                        if (!imageDir.exists()) imageDir.mkdirs()
+
+                        val uniqueFileName = "${System.currentTimeMillis()}_${selectedFile.name}"
+                        val destinationFile = File(imageDir, uniqueFileName)
+
+                        selectedFile.copyTo(destinationFile, overwrite = true)
+
+                        val imagePath = destinationFile.absolutePath
+                        println("Image saved to: $imagePath")
+
+                        selectedImageName = imagePath
+                        currentUser.profilePictureUrl = imagePath
+
+                    } catch (e: Exception) {
+                        println("Error copying file: ${e.message}")
+                    }
                 }
             }
         )

@@ -31,7 +31,8 @@ import java.io.File
 fun ProfileImage(url: String, name: String) {
     val imageModifier = Modifier.size(150.dp).clip(CircleShape)
     if (url.isNotBlank()) {
-        val bitmap = remember(url) { loadImageBitmap(File("src/main/resources/images/$url")) }
+        val bitmap = remember(url) { loadImageBitmap(File(url)) }
+
         if (bitmap != null) {
             Image(
                 bitmap = bitmap,
@@ -40,6 +41,7 @@ fun ProfileImage(url: String, name: String) {
                 contentScale = ContentScale.Crop
             )
         } else {
+            println("ERROR: Could not load image from path: $url")
             ProfileImagePlaceholder(imageModifier)
         }
     } else {
@@ -58,6 +60,7 @@ fun ProfileImagePlaceholder(modifier: Modifier = Modifier) {
         )
     }
 }
+
 
 @Composable
 fun Chip(text: String) {

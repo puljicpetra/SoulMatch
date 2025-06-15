@@ -13,3 +13,12 @@ fun loadImageBitmap(file: File): ImageBitmap? {
         null
     }
 }
+
+fun getAppDataDirectory(): File {
+    val userHome = System.getProperty("user.home")
+    val appDir = File(userHome, ".soulmatch-app")
+    if (!appDir.exists()) {
+        appDir.mkdirs()
+    }
+    return appDir
+}
