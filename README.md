@@ -1,7 +1,5 @@
 # SoulMatch
 
-## 🇭🇷 Hrvatski
-
 **SoulMatch** je mobilna aplikacija razvijena u programskom jeziku **Kotlin**, inspirirana modernim platformama za upoznavanje poput **Tindera** i **Hinge-a**. Aplikacija je izrađena u sklopu kolegija *Programiranje na Java virtualnom stroju*.
 
 ### 🎯 Ključne funkcionalnosti
@@ -20,7 +18,6 @@ Ovu aplikaciju razvile su:
 
 ---
 
-## 🇬🇧 English
 
 **SoulMatch** is a mobile application developed in **Kotlin**, inspired by modern dating platforms such as **Tinder** and **Hinge**. The app was created as part of the course *Programming on the Java Virtual Machine*.
 
