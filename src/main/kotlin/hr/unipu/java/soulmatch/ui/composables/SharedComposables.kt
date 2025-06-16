@@ -23,6 +23,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.AwtWindow
 import hr.unipu.java.soulmatch.loadImageBitmap
+import java.awt.Dialog
 import java.awt.FileDialog
 import java.awt.Frame
 import java.io.File
@@ -110,11 +111,17 @@ fun FileDialog(
 ) = AwtWindow(
     create = {
         object : FileDialog(parent, "Choose an image", LOAD) {
-            override fun dispose() {
-                onCloseRequest(files.firstOrNull())
-                super.dispose()
+            init {
+                this.modalityType = Dialog.ModalityType.APPLICATION_MODAL
+            }
+
+            override fun setVisible(b: Boolean) {
+                super.setVisible(b)
+                if (!b) {
+                    onCloseRequest(files.firstOrNull())
+                }
             }
         }
     },
-    dispose = FileDialog::dispose
+    dispose = { it.dispose() }
 )

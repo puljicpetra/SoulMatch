@@ -1,4 +1,5 @@
 package hr.unipu.java.soulmatch.ui.screens
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -14,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import hr.unipu.java.soulmatch.Screen
@@ -22,10 +24,18 @@ import hr.unipu.java.soulmatch.loadImageBitmap
 import hr.unipu.java.soulmatch.model.AppData
 import hr.unipu.java.soulmatch.ui.composables.FileDialog
 import java.io.File
+
 @Composable
-fun MyProfileScreen(onNavigate: (Screen) -> Unit) {
-// --- DIJAGNOSTIČKI LOG #1 ---
-    println("MyProfileScreen RECOMPOSING")
+fun MyProfileScreen(
+    onNavigate: (Screen) -> Unit,
+    clearPreviewState: () -> Unit,
+    previewBitmap: ImageBitmap?,
+    onPreviewBitmapChange: (ImageBitmap?) -> Unit,
+    fileToSave: File?,
+    onFileToSaveChange: (File?) -> Unit,
+    showFileChooser: Boolean,
+    onShowFileChooserChange: (Boolean) -> Unit
+) {
     val currentUser = AppData.currentUser
     if (currentUser == null) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -41,9 +51,13 @@ fun MyProfileScreen(onNavigate: (Screen) -> Unit) {
     var country by remember { mutableStateOf(currentUser.country) }
     var interests by remember { mutableStateOf(currentUser.interests.joinToString(", ")) }
 
-    var selectedImageName by remember { mutableStateOf(currentUser.profilePictureUrl) }
-    var showFileChooser by remember { mutableStateOf(false) }
-
+    val initialImageBitmap = remember(currentUser.profilePictureUrl) {
+        if (currentUser.profilePictureUrl.isNotBlank()) {
+            loadImageBitmap(File(currentUser.profilePictureUrl))
+        } else {
+            null
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -52,7 +66,10 @@ fun MyProfileScreen(onNavigate: (Screen) -> Unit) {
                 backgroundColor = Color(0xFFE57373),
                 contentColor = Color.White,
                 navigationIcon = {
-                    IconButton(onClick = { onNavigate(Screen.FindMatch) }) {
+                    IconButton(onClick = {
+                        clearPreviewState()
+                        onNavigate(Screen.FindMatch)
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 }
@@ -69,86 +86,41 @@ fun MyProfileScreen(onNavigate: (Screen) -> Unit) {
         ) {
             Spacer(modifier = Modifier.height(16.dp))
 
-            val imageBitmap = remember(selectedImageName) {
-                // --- DIJAGNOSTIČKI LOG #2 ---
-                println("--- REMEMBER BLOCK re-calculating for image path: '$selectedImageName'")
+            val imageToShow = previewBitmap ?: initialImageBitmap
 
-                if (selectedImageName.isNotBlank()) {
-                    val bmp = loadImageBitmap(File(selectedImageName))
-
-                    // --- DIJAGNOSTIČKI LOG #3 ---
-                    println("--> Bitmap loaded: ${if (bmp != null) "SUCCESS" else "FAILURE"}")
-
-                    bmp
-                } else {
-                    null
-                }
-            }
-
-            if (imageBitmap != null) {
+            if (imageToShow != null) {
                 Image(
-                    bitmap = imageBitmap,
+                    bitmap = imageToShow,
                     contentDescription = "Profile Picture",
                     modifier = Modifier.size(120.dp).clip(CircleShape),
                     contentScale = ContentScale.Crop
                 )
             } else {
                 Box(modifier = Modifier.size(120.dp).background(Color.LightGray, CircleShape)) {
-                    Icon(
-                        Icons.Default.Person,
-                        "Placeholder",
-                        modifier = Modifier.fillMaxSize(0.6f).align(Alignment.Center),
-                        tint = Color.White
-                    )
+                    Icon(Icons.Default.Person, "Placeholder", modifier = Modifier.fillMaxSize(0.6f).align(Alignment.Center), tint = Color.White)
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
-            Button(onClick = { showFileChooser = true }) {
-                Text(if (selectedImageName.isBlank()) "Add Profile Picture" else "Change Profile Picture")
+
+            Button(
+                onClick = { onShowFileChooserChange(true) },
+                enabled = !showFileChooser
+            ) {
+                Text(if (imageToShow == null) "Add Profile Picture" else "Change Profile Picture")
             }
             Spacer(modifier = Modifier.height(16.dp))
 
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                label = { Text("Your Name") },
-                modifier = Modifier.fillMaxWidth()
-            )
+            OutlinedTextField(value = name, onValueChange = { name = it }, label = { Text("Your Name") }, modifier = Modifier.fillMaxWidth())
             Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = age,
-                onValueChange = { if (it.all(Char::isDigit)) age = it },
-                label = { Text("Your Age") },
-                modifier = Modifier.fillMaxWidth()
-            )
+            OutlinedTextField(value = age, onValueChange = { if (it.all(Char::isDigit)) age = it }, label = { Text("Your Age") }, modifier = Modifier.fillMaxWidth())
             Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = city,
-                onValueChange = { city = it },
-                label = { Text("City") },
-                modifier = Modifier.fillMaxWidth()
-            )
+            OutlinedTextField(value = city, onValueChange = { city = it }, label = { Text("City") }, modifier = Modifier.fillMaxWidth())
             Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = country,
-                onValueChange = { country = it },
-                label = { Text("Country") },
-                modifier = Modifier.fillMaxWidth()
-            )
+            OutlinedTextField(value = country, onValueChange = { country = it }, label = { Text("Country") }, modifier = Modifier.fillMaxWidth())
             Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = interests,
-                onValueChange = { interests = it },
-                label = { Text("Your Interests (comma-separated)") },
-                modifier = Modifier.fillMaxWidth()
-            )
+            OutlinedTextField(value = interests, onValueChange = { interests = it }, label = { Text("Your Interests (comma-separated)") }, modifier = Modifier.fillMaxWidth())
             Spacer(modifier = Modifier.height(8.dp))
-            OutlinedTextField(
-                value = bio,
-                onValueChange = { bio = it },
-                label = { Text("About yourself...") },
-                modifier = Modifier.fillMaxWidth().height(100.dp)
-            )
+            OutlinedTextField(value = bio, onValueChange = { bio = it }, label = { Text("About yourself...") }, modifier = Modifier.fillMaxWidth().height(100.dp))
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
@@ -156,13 +128,27 @@ fun MyProfileScreen(onNavigate: (Screen) -> Unit) {
                     currentUser.name = name
                     currentUser.age = age.toIntOrNull() ?: 0
                     currentUser.bio = bio
-                    currentUser.profilePictureUrl = selectedImageName
                     currentUser.city = city
                     currentUser.country = country
                     currentUser.interests = interests.split(',').map { it.trim() }.filter { it.isNotBlank() }
 
+                    if (fileToSave != null) {
+                        try {
+                            val imageDir = File(getAppDataDirectory(), "images")
+                            if (!imageDir.exists()) imageDir.mkdirs()
+                            val uniqueFileName = "${System.currentTimeMillis()}_${fileToSave.name}"
+                            val destinationFile = File(imageDir, uniqueFileName)
+                            fileToSave.copyTo(destinationFile, overwrite = true)
+                            currentUser.profilePictureUrl = destinationFile.absolutePath
+                            println("Image saved to: ${destinationFile.absolutePath}")
+                        } catch (e: Exception) {
+                            println("Error saving new image file: ${e.message}")
+                        }
+                    }
+
                     AppData.saveUsers()
                     println("Profile updated for user: ${currentUser.email}")
+                    clearPreviewState()
                     onNavigate(Screen.FindMatch)
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -177,26 +163,10 @@ fun MyProfileScreen(onNavigate: (Screen) -> Unit) {
     if (showFileChooser) {
         FileDialog(
             onCloseRequest = { selectedFile: File? ->
-                showFileChooser = false
+                onShowFileChooserChange(false)
                 if (selectedFile != null) {
-                    try {
-                        val imageDir = File(getAppDataDirectory(), "images")
-                        if (!imageDir.exists()) imageDir.mkdirs()
-
-                        val uniqueFileName = "${System.currentTimeMillis()}_${selectedFile.name}"
-                        val destinationFile = File(imageDir, uniqueFileName)
-
-                        selectedFile.copyTo(destinationFile, overwrite = true)
-
-                        val imagePath = destinationFile.absolutePath
-                        println("Image saved to: $imagePath")
-
-                        selectedImageName = imagePath
-                        currentUser.profilePictureUrl = imagePath
-
-                    } catch (e: Exception) {
-                        println("Error copying file: ${e.message}")
-                    }
+                    onFileToSaveChange(selectedFile)
+                    onPreviewBitmapChange(loadImageBitmap(selectedFile))
                 }
             }
         )
