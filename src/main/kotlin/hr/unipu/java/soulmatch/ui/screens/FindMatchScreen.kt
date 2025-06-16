@@ -7,6 +7,8 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.People
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,32 +35,21 @@ fun FindMatchScreen(onNavigate: (Screen) -> Unit) {
     }
 
 
-    val potentialMatches = remember(AppData.users, currentUser.likes, currentUser.dislikes) {
+    val potentialMatches = remember(AppData.users, currentUser.likes, currentUser.dislikes, currentUser.matches) {
         AppData.users.filter { otherUser ->
-
             val isNotCurrentUser = otherUser.id != currentUser.id
-
-
             val isNotAlreadySwiped = !currentUser.likes.contains(otherUser.id) && !currentUser.dislikes.contains(otherUser.id)
-
-
-
             val currentUserIsSeekingOther = currentUser.seeking.isEmpty() || currentUser.seeking.contains(otherUser.gender)
             val otherUserIsSeekingCurrent = otherUser.seeking.isEmpty() || otherUser.seeking.contains(currentUser.gender)
             val isPreferenceMatch = currentUserIsSeekingOther && otherUserIsSeekingCurrent
-
-
             isNotCurrentUser && isNotAlreadySwiped && isPreferenceMatch
         }.sortedByDescending { otherUser ->
-
             currentUser.interests.intersect(otherUser.interests.toSet()).size
         }
     }
 
     var currentIndex by remember { mutableStateOf(0) }
     var menuExpanded by remember { mutableStateOf(false) }
-
-
     var showMatchDialog by remember { mutableStateOf(false) }
     var matchedUserName by remember { mutableStateOf("") }
 
@@ -74,6 +65,17 @@ fun FindMatchScreen(onNavigate: (Screen) -> Unit) {
                     colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFE57373))
                 ) {
                     Text("Awesome!", color = Color.White)
+                }
+            },
+            dismissButton = {
+                Button(
+                    onClick = {
+                        showMatchDialog = false
+                        onNavigate(Screen.Matches)
+                    },
+                    colors = ButtonDefaults.buttonColors(backgroundColor = MaterialTheme.colors.secondary)
+                ) {
+                    Text("Go to Messages")
                 }
             }
         )
@@ -107,6 +109,29 @@ fun FindMatchScreen(onNavigate: (Screen) -> Unit) {
                     }
                 }
             )
+        },
+        bottomBar = {
+            BottomAppBar(
+                backgroundColor = MaterialTheme.colors.surface,
+                elevation = 8.dp
+            ) {
+                BottomNavigationItem(
+                    selected = true,
+                    onClick = { },
+                    icon = { Icon(Icons.Default.People, "Find Matches") },
+                    label = { Text("Find") },
+                    selectedContentColor = Color(0xFFE57373),
+                    unselectedContentColor = Color.Gray
+                )
+                BottomNavigationItem(
+                    selected = false,
+                    onClick = { onNavigate(Screen.Matches) },
+                    icon = { Icon(Icons.Default.Forum, "Messages") },
+                    label = { Text("Messages") },
+                    selectedContentColor = Color(0xFFE57373),
+                    unselectedContentColor = Color.Gray
+                )
+            }
         }
     ) { paddingValues ->
         Column(
@@ -115,14 +140,12 @@ fun FindMatchScreen(onNavigate: (Screen) -> Unit) {
         ) {
             if (potentialMatches.isNotEmpty() && currentIndex < potentialMatches.size) {
                 val userToShow = potentialMatches[currentIndex]
-
-
                 Card(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                     elevation = 8.dp
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp).verticalScroll(rememberScrollState()), // Added scroll for long bios
+                        modifier = Modifier.padding(16.dp).verticalScroll(rememberScrollState()),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         ProfileImage(userToShow.profilePictureUrl, userToShow.name)
@@ -154,10 +177,7 @@ fun FindMatchScreen(onNavigate: (Screen) -> Unit) {
                         }
                     }
                 }
-
                 Spacer(modifier = Modifier.height(24.dp))
-
-
                 LikeDislikeButtons(
                     onDislike = {
                         AppData.userDislikes(currentUser, userToShow)
@@ -166,11 +186,9 @@ fun FindMatchScreen(onNavigate: (Screen) -> Unit) {
                     onLike = {
                         val isMatch = AppData.userLikes(currentUser, userToShow)
                         if (isMatch) {
-
                             matchedUserName = userToShow.name
                             showMatchDialog = true
                         }
-
                         currentIndex++
                     }
                 )
@@ -179,6 +197,6 @@ fun FindMatchScreen(onNavigate: (Screen) -> Unit) {
                     Text("No more users to show. Come back later!", fontSize = 18.sp)
                 }
             }
-            }
         }
+    }
 }

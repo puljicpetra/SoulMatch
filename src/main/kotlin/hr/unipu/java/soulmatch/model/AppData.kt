@@ -7,10 +7,14 @@ import java.io.File
 
 object AppData {
     val users = mutableListOf<User>()
+    val conversations = mutableListOf<Conversation>()
+    val messages = mutableListOf<Message>()
+
     var currentUser: User? = null
 
     private val userFile = File(getAppDataDirectory(), "users.json")
-
+    private val conversationFile = File(getAppDataDirectory(), "conversations.json")
+    private val messageFile = File(getAppDataDirectory(), "messages.json")
 
 
     fun userLikes(liker: User, liked: User): Boolean {
@@ -21,32 +25,41 @@ object AppData {
             liker.matches.add(liked.id)
             liked.matches.add(liker.id)
             println("IT'S A MATCH BETWEEN ${liker.name} and ${liked.name}!")
-            saveUsers()
+            saveAllData()
             return true
         }
 
-        saveUsers()
+        saveAllData()
         return false
     }
 
-    /**
-     * Records that one user has disliked another.
-     * @param disliker The user who performed the dislike action.
-     * @param disliked The user who was disliked.
-     */
     fun userDislikes(disliker: User, disliked: User) {
         disliker.dislikes.add(disliked.id)
         println("${disliker.name} disliked ${disliked.name}")
+        // AŽURIRANO: Pozivamo saveAllData
+        saveAllData()
+    }
+
+    fun saveAllData() {
         saveUsers()
+        saveConversations()
+        saveMessages()
+        println("All app data saved.")
+    }
+
+    fun loadAllData() {
+        loadUsers()
+        loadConversations()
+        loadMessages()
+        println("All app data loaded.")
     }
 
 
     fun saveUsers() {
         try {
             val json = Json { ignoreUnknownKeys = true; prettyPrint = true }
-            val jsonString = json.encodeToString<List<User>>(users)
+            val jsonString = json.encodeToString(users)
             userFile.writeText(jsonString)
-            println("Users successfully saved to ${userFile.absolutePath}")
         } catch (e: Exception) {
             println("Error saving users: ${e.message}")
             e.printStackTrace()
@@ -58,19 +71,71 @@ object AppData {
             if (userFile.exists()) {
                 val jsonString = userFile.readText()
                 if (jsonString.isNotBlank()) {
-
                     val json = Json { ignoreUnknownKeys = true }
                     val loadedUsers = json.decodeFromString<List<User>>(jsonString)
                     users.clear()
                     users.addAll(loadedUsers)
-                    println("${users.size} users loaded from ${userFile.absolutePath}")
                 }
-            } else {
-                println("User data file not found at ${userFile.absolutePath}. Starting with a new list.")
             }
         } catch (e: Exception) {
             println("Error loading users from ${userFile.absolutePath}: ${e.message}")
             e.printStackTrace()
-            }
         }
+    }
+
+    fun saveConversations() {
+        try {
+            val json = Json { prettyPrint = true }
+            val jsonString = json.encodeToString(conversations)
+            conversationFile.writeText(jsonString)
+        } catch (e: Exception) {
+            println("Error saving conversations: ${e.message}")
+            e.printStackTrace()
+        }
+    }
+
+    fun loadConversations() {
+        try {
+            if (conversationFile.exists()) {
+                val jsonString = conversationFile.readText()
+                if (jsonString.isNotBlank()) {
+                    val json = Json { ignoreUnknownKeys = true }
+                    val loaded = json.decodeFromString<List<Conversation>>(jsonString)
+                    conversations.clear()
+                    conversations.addAll(loaded)
+                }
+            }
+        } catch (e: Exception) {
+            println("Error loading conversations: ${e.message}")
+            e.printStackTrace()
+        }
+    }
+
+    fun saveMessages() {
+        try {
+            val json = Json { prettyPrint = true }
+            val jsonString = json.encodeToString(messages)
+            messageFile.writeText(jsonString)
+        } catch (e: Exception) {
+            println("Error saving messages: ${e.message}")
+            e.printStackTrace()
+        }
+    }
+
+    fun loadMessages() {
+        try {
+            if (messageFile.exists()) {
+                val jsonString = messageFile.readText()
+                if (jsonString.isNotBlank()) {
+                    val json = Json { ignoreUnknownKeys = true }
+                    val loaded = json.decodeFromString<List<Message>>(jsonString)
+                    messages.clear()
+                    messages.addAll(loaded)
+                }
+            }
+        } catch (e: Exception) {
+            println("Error loading messages: ${e.message}")
+            e.printStackTrace()
+        }
+    }
 }

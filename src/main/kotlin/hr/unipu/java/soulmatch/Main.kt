@@ -9,62 +9,50 @@ import hr.unipu.java.soulmatch.ui.screens.*
 import java.io.File
 
 enum class Screen {
-    Welcome, Login, Signup, ProfileSetup, FindMatch, MyProfile
+    Welcome, Login, Signup, ProfileSetup, FindMatch, MyProfile,
+    Matches, Chat
 }
 
 fun main() = application {
-    AppData.loadUsers()
+    AppData.loadAllData()
 
     Window(
         onCloseRequest = {
-            AppData.saveUsers()
+            AppData.saveAllData()
             exitApplication()
         },
         title = "SoulMatch"
     ) {
-        println("[DEBUG Main.kt] Window recomposing.")
         var currentScreen by remember { mutableStateOf(Screen.Welcome) }
+        var currentChatId by remember { mutableStateOf<String?>(null) }
 
         var profilePreviewBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
         var profileFileToSave by remember { mutableStateOf<File?>(null) }
         var showFileChooser by remember { mutableStateOf(false) }
 
-        println("[DEBUG Main.kt] Current State -> showFileChooser: $showFileChooser, profileFileToSave: ${profileFileToSave?.name}")
-
         val clearPreviewState = {
-            println("[DEBUG Main.kt] clearPreviewState called.")
             profilePreviewBitmap = null
             profileFileToSave = null
         }
 
-        val onNavigate: (Screen) -> Unit = { screen ->
-            println("[DEBUG Main.kt] onNavigate called. Navigating to: $screen")
+        val onNavigate: (Screen, String?) -> Unit = { screen, chatId ->
+            println("[DEBUG Main.kt] Navigating to: $screen, with chatId: $chatId")
             currentScreen = screen
+            currentChatId = chatId
         }
 
-        val onShowFileChooserChange = { shouldShow: Boolean ->
-            println("[DEBUG Main.kt] onShowFileChooserChange called with: $shouldShow")
-            showFileChooser = shouldShow
-        }
-
-        val onPreviewBitmapChange = { newBitmap: ImageBitmap? ->
-            println("[DEBUG Main.kt] onPreviewBitmapChange called. New bitmap is ${if (newBitmap != null) "NOT NULL" else "NULL"}.")
-            profilePreviewBitmap = newBitmap
-        }
-
-        val onFileToSaveChange = { newFile: File? ->
-            println("[DEBUG Main.t] onFileToSaveChange called. New file is: ${newFile?.name}")
-            profileFileToSave = newFile
-        }
+        val onShowFileChooserChange = { shouldShow: Boolean -> showFileChooser = shouldShow }
+        val onPreviewBitmapChange = { newBitmap: ImageBitmap? -> profilePreviewBitmap = newBitmap }
+        val onFileToSaveChange = { newFile: File? -> profileFileToSave = newFile }
 
 
         when (currentScreen) {
-            Screen.Welcome -> WelcomeScreen(onNavigate = onNavigate)
-            Screen.Signup -> SignupScreen(onNavigate = onNavigate)
-            Screen.Login -> LoginScreen(onNavigate = onNavigate)
+            Screen.Welcome -> WelcomeScreen { screen -> onNavigate(screen, null) }
+            Screen.Signup -> SignupScreen { screen -> onNavigate(screen, null) }
+            Screen.Login -> LoginScreen { screen -> onNavigate(screen, null) }
 
             Screen.ProfileSetup -> ProfileSetupScreen(
-                onNavigate = onNavigate,
+                onNavigate = { screen -> onNavigate(screen, null) },
                 clearPreviewState = clearPreviewState,
                 previewBitmap = profilePreviewBitmap,
                 onPreviewBitmapChange = onPreviewBitmapChange,
@@ -74,10 +62,10 @@ fun main() = application {
                 onShowFileChooserChange = onShowFileChooserChange
             )
 
-            Screen.FindMatch -> FindMatchScreen(onNavigate = onNavigate)
+            Screen.FindMatch -> FindMatchScreen { screen -> onNavigate(screen, null) }
 
             Screen.MyProfile -> MyProfileScreen(
-                onNavigate = onNavigate,
+                onNavigate = { screen -> onNavigate(screen, null) },
                 clearPreviewState = clearPreviewState,
                 previewBitmap = profilePreviewBitmap,
                 onPreviewBitmapChange = onPreviewBitmapChange,
@@ -86,6 +74,23 @@ fun main() = application {
                 showFileChooser = showFileChooser,
                 onShowFileChooserChange = onShowFileChooserChange
             )
+
+            Screen.Matches -> MatchesScreen(onNavigate = onNavigate)
+
+            Screen.Chat -> {
+                val chatId = currentChatId
+                if (chatId != null) {
+                    ChatScreen(
+                        conversationId = chatId,
+                        onNavigateBack = { onNavigate(Screen.Matches, null) }
+                    )
+                } else {
+                    LaunchedEffect(Unit) {
+                        println("[ERROR Main.kt] Chat screen opened without a chatId. Redirecting to Matches.")
+                        onNavigate(Screen.Matches, null)
+                    }
+                }
+            }
         }
     }
 }
