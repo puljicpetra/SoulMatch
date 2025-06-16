@@ -16,8 +16,17 @@ data class User(
     var city: String = "",
     var country: String = "",
 
+
+    var gender: String = "",
+    var seeking: List<String> = emptyList(),
+
     var profilePictureUrl: String = "",
     var imageUrls: List<String> = emptyList(),
 
-    var interests: List<String> = emptyList()
+    var interests: List<String> = emptyList(),
+
+
+    val likes: MutableSet<String> = mutableSetOf(),
+    val dislikes: MutableSet<String> = mutableSetOf(),
+    val matches: MutableSet<String> = mutableSetOf()
 )

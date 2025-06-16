@@ -49,7 +49,10 @@ fun MyProfileScreen(
     var bio by remember { mutableStateOf(currentUser.bio) }
     var city by remember { mutableStateOf(currentUser.city) }
     var country by remember { mutableStateOf(currentUser.country) }
+    var gender by remember { mutableStateOf(currentUser.gender) }
+    var seeking by remember { mutableStateOf(currentUser.seeking.joinToString(", ")) }
     var interests by remember { mutableStateOf(currentUser.interests.joinToString(", ")) }
+
 
     val initialImageBitmap = remember(currentUser.profilePictureUrl) {
         if (currentUser.profilePictureUrl.isNotBlank()) {
@@ -87,7 +90,6 @@ fun MyProfileScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             val imageToShow = previewBitmap ?: initialImageBitmap
-
             if (imageToShow != null) {
                 Image(
                     bitmap = imageToShow,
@@ -101,7 +103,6 @@ fun MyProfileScreen(
                 }
             }
             Spacer(modifier = Modifier.height(8.dp))
-
             Button(
                 onClick = { onShowFileChooserChange(true) },
                 enabled = !showFileChooser
@@ -118,6 +119,12 @@ fun MyProfileScreen(
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(value = country, onValueChange = { country = it }, label = { Text("Country") }, modifier = Modifier.fillMaxWidth())
             Spacer(modifier = Modifier.height(8.dp))
+
+            OutlinedTextField(value = gender, onValueChange = { gender = it }, label = { Text("Your Gender (e.g., Man, Woman)") }, modifier = Modifier.fillMaxWidth())
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(value = seeking, onValueChange = { seeking = it }, label = { Text("Seeking (comma-separated, e.g., Woman, Man)") }, modifier = Modifier.fillMaxWidth())
+            Spacer(modifier = Modifier.height(8.dp))
+
             OutlinedTextField(value = interests, onValueChange = { interests = it }, label = { Text("Your Interests (comma-separated)") }, modifier = Modifier.fillMaxWidth())
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedTextField(value = bio, onValueChange = { bio = it }, label = { Text("About yourself...") }, modifier = Modifier.fillMaxWidth().height(100.dp))
@@ -130,6 +137,10 @@ fun MyProfileScreen(
                     currentUser.bio = bio
                     currentUser.city = city
                     currentUser.country = country
+
+                    currentUser.gender = gender.trim()
+                    currentUser.seeking = seeking.split(',').map { it.trim() }.filter { it.isNotBlank() }
+
                     currentUser.interests = interests.split(',').map { it.trim() }.filter { it.isNotBlank() }
 
                     if (fileToSave != null) {

@@ -1,15 +1,11 @@
 package hr.unipu.java.soulmatch.ui.screens
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Clear
-import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +19,8 @@ import hr.unipu.java.soulmatch.model.AppData
 import hr.unipu.java.soulmatch.ui.composables.Chip
 import hr.unipu.java.soulmatch.ui.composables.LikeDislikeButtons
 import hr.unipu.java.soulmatch.ui.composables.ProfileImage
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 
 @Composable
 fun FindMatchScreen(onNavigate: (Screen) -> Unit) {
@@ -34,16 +32,52 @@ fun FindMatchScreen(onNavigate: (Screen) -> Unit) {
         return
     }
 
-    val sortedMatches = remember(AppData.users) {
-        AppData.users
-            .filter { it.id != currentUser.id }
-            .sortedByDescending { otherUser ->
-                currentUser.interests.intersect(otherUser.interests.toSet()).size
-            }
+
+    val potentialMatches = remember(AppData.users, currentUser.likes, currentUser.dislikes) {
+        AppData.users.filter { otherUser ->
+
+            val isNotCurrentUser = otherUser.id != currentUser.id
+
+
+            val isNotAlreadySwiped = !currentUser.likes.contains(otherUser.id) && !currentUser.dislikes.contains(otherUser.id)
+
+
+
+            val currentUserIsSeekingOther = currentUser.seeking.isEmpty() || currentUser.seeking.contains(otherUser.gender)
+            val otherUserIsSeekingCurrent = otherUser.seeking.isEmpty() || otherUser.seeking.contains(currentUser.gender)
+            val isPreferenceMatch = currentUserIsSeekingOther && otherUserIsSeekingCurrent
+
+
+            isNotCurrentUser && isNotAlreadySwiped && isPreferenceMatch
+        }.sortedByDescending { otherUser ->
+
+            currentUser.interests.intersect(otherUser.interests.toSet()).size
+        }
     }
 
     var currentIndex by remember { mutableStateOf(0) }
     var menuExpanded by remember { mutableStateOf(false) }
+
+
+    var showMatchDialog by remember { mutableStateOf(false) }
+    var matchedUserName by remember { mutableStateOf("") }
+
+
+    if (showMatchDialog) {
+        AlertDialog(
+            onDismissRequest = { showMatchDialog = false },
+            title = { Text("🎉 It's a Match! 🎉", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE57373)) },
+            text = { Text("You and $matchedUserName have liked each other. You can now start a conversation!") },
+            confirmButton = {
+                Button(
+                    onClick = { showMatchDialog = false },
+                    colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFE57373))
+                ) {
+                    Text("Awesome!", color = Color.White)
+                }
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -79,15 +113,16 @@ fun FindMatchScreen(onNavigate: (Screen) -> Unit) {
             modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (sortedMatches.isNotEmpty() && currentIndex < sortedMatches.size) {
-                val userToShow = sortedMatches[currentIndex]
+            if (potentialMatches.isNotEmpty() && currentIndex < potentialMatches.size) {
+                val userToShow = potentialMatches[currentIndex]
+
 
                 Card(
                     modifier = Modifier.weight(1f).fillMaxWidth(),
                     elevation = 8.dp
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(16.dp).verticalScroll(rememberScrollState()), // Added scroll for long bios
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         ProfileImage(userToShow.profilePictureUrl, userToShow.name)
@@ -103,10 +138,11 @@ fun FindMatchScreen(onNavigate: (Screen) -> Unit) {
                         }
 
                         Divider(modifier = Modifier.padding(vertical = 16.dp))
-                        Text(text = userToShow.bio, style = MaterialTheme.typography.body1, modifier = Modifier.weight(1f))
+                        Text(text = userToShow.bio, style = MaterialTheme.typography.body1)
 
                         if (userToShow.interests.isNotEmpty()) {
-                            Text("Interests", style = MaterialTheme.typography.h6, modifier = Modifier.padding(top = 8.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text("Interests", style = MaterialTheme.typography.h6)
                             LazyRow(
                                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
@@ -121,14 +157,20 @@ fun FindMatchScreen(onNavigate: (Screen) -> Unit) {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
+
                 LikeDislikeButtons(
                     onDislike = {
-                        println("Declined user: ${userToShow.name}")
+                        AppData.userDislikes(currentUser, userToShow)
                         currentIndex++
                     },
                     onLike = {
-                        println("Liked user: ${userToShow.name}")
-                        // TODO: Implementirati logiku za lajkanje i provjeru matcha
+                        val isMatch = AppData.userLikes(currentUser, userToShow)
+                        if (isMatch) {
+
+                            matchedUserName = userToShow.name
+                            showMatchDialog = true
+                        }
+
                         currentIndex++
                     }
                 )
@@ -137,6 +179,6 @@ fun FindMatchScreen(onNavigate: (Screen) -> Unit) {
                     Text("No more users to show. Come back later!", fontSize = 18.sp)
                 }
             }
+            }
         }
-    }
 }
