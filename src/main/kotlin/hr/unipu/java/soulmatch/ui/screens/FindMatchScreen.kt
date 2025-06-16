@@ -57,7 +57,7 @@ fun FindMatchScreen(onNavigate: (Screen) -> Unit) {
     if (showMatchDialog) {
         AlertDialog(
             onDismissRequest = { showMatchDialog = false },
-            title = { Text("🎉 It's a Match! 🎉", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE57373)) },
+            title = { Text("🎉 It's a Match 🎉", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = Color(0xFFE57373)) },
             text = { Text("You and $matchedUserName have liked each other. You can now start a conversation!") },
             confirmButton = {
                 Button(
