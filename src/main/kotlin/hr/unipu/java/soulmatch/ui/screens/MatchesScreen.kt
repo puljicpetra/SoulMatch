@@ -3,6 +3,7 @@ package hr.unipu.java.soulmatch.ui.screens
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -18,7 +19,6 @@ import hr.unipu.java.soulmatch.Screen
 import hr.unipu.java.soulmatch.model.AppData
 import hr.unipu.java.soulmatch.model.Conversation
 import hr.unipu.java.soulmatch.ui.composables.ProfileImage
-import hr.unipu.java.soulmatch.ui.composables.ProfileImagePlaceholder
 
 fun findOrCreateConversation(userId1: String, userId2: String): Conversation {
     val participantIds = setOf(userId1, userId2)
@@ -49,7 +49,7 @@ fun MatchesScreen(onNavigate: (Screen, String?) -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Messages") },
+                title = { Text("Razgovori") },
                 backgroundColor = Color(0xFFE57373),
                 contentColor = Color.White
             )
@@ -69,7 +69,7 @@ fun MatchesScreen(onNavigate: (Screen, String?) -> Unit) {
                 )
                 BottomNavigationItem(
                     selected = true,
-                    onClick = { /* Već smo ovdje */ },
+                    onClick = { },
                     icon = { Icon(Icons.Default.Forum, "Messages") },
                     label = { Text("Messages") },
                     selectedContentColor = Color(0xFFE57373),
@@ -86,56 +86,94 @@ fun MatchesScreen(onNavigate: (Screen, String?) -> Unit) {
                 }
             }
         } else {
-            LazyColumn(modifier = Modifier.padding(padding)) {
-                items(conversations) { conversation ->
-                    val otherUserId = conversation.participantIds.first { it != currentUser.id }
-                    val otherUser = AppData.users.find { it.id == otherUserId }
+            LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
 
-                    if (otherUser != null) {
-                        val lastMessage = AppData.messages
-                            .filter { it.id in conversation.messageIds }
-                            .maxByOrNull { it.timestamp }
+                item {
+                    Text(
+                        text = "Recent Matches",
+                        style = MaterialTheme.typography.h6,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(start = 16.dp, top = 16.dp, bottom = 8.dp)
+                    )
+                }
 
-                        ListItem(
-                            modifier = Modifier.clickable {
-                                onNavigate(Screen.Chat, conversation.id)
-                            },
-                            icon = {
-                                Box(modifier = Modifier.size(56.dp)) {
-                                    ProfileImage(url = otherUser.profilePictureUrl, name = otherUser.name)
+                item {
+                    LazyRow(
+                        contentPadding = PaddingValues(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(matches) { matchUser ->
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center,
+                                modifier = Modifier.clickable {
+                                    val conversation = findOrCreateConversation(currentUser.id, matchUser.id)
+                                    onNavigate(Screen.Chat, conversation.id)
                                 }
-                            },
-                            text = { Text(otherUser.name, fontWeight = FontWeight.Bold) },
-                            secondaryText = {
-                                Text(
-                                    lastMessage?.content ?: "No messages yet. Start the conversation!",
-                                    maxLines = 1,
-                                    color = Color.Gray
-                                )
+                            ) {
+                                Box(modifier = Modifier.size(72.dp)) {
+                                    ProfileImage(url = matchUser.profilePictureUrl, name = matchUser.name)
+                                }
+                                Spacer(Modifier.height(4.dp))
+                                Text(matchUser.name, style = MaterialTheme.typography.body2)
                             }
-                        )
-                        Divider()
+                        }
                     }
                 }
-                val matchesWithNoConversation = matches.filter { matchUser ->
-                    conversations.none { conv -> matchUser.id in conv.participantIds }
+
+                item {
+                    Divider(modifier = Modifier.padding(vertical = 16.dp))
                 }
 
-                items(matchesWithNoConversation) { matchUser ->
-                    ListItem(
-                        modifier = Modifier.clickable {
-                            val conversation = findOrCreateConversation(currentUser.id, matchUser.id)
-                            onNavigate(Screen.Chat, conversation.id)
-                        },
-                        icon = {
-                            Box(modifier = Modifier.size(56.dp)) {
-                                ProfileImage(url = matchUser.profilePictureUrl, name = matchUser.name)
-                            }
-                        },
-                        text = { Text(matchUser.name, fontWeight = FontWeight.Bold) },
-                        secondaryText = { Text("Matched! Tap to start chatting.", color = Color.Gray) }
+                item {
+                    Text(
+                        text = "Messages",
+                        style = MaterialTheme.typography.h6,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(start = 16.dp, bottom = 8.dp)
                     )
-                    Divider()
+                }
+
+                if (conversations.isEmpty()) {
+                    item {
+                        Box(
+                            Modifier.fillParentMaxWidth().padding(vertical = 32.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("No messages yet. Tap a match to start!", color = Color.Gray)
+                        }
+                    }
+                } else {
+                    items(conversations) { conversation ->
+                        val otherUserId = conversation.participantIds.first { it != currentUser.id }
+                        val otherUser = AppData.users.find { it.id == otherUserId }
+
+                        if (otherUser != null) {
+                            val lastMessage = AppData.messages
+                                .filter { it.id in conversation.messageIds }
+                                .maxByOrNull { it.timestamp }
+
+                            ListItem(
+                                modifier = Modifier.clickable {
+                                    onNavigate(Screen.Chat, conversation.id)
+                                },
+                                icon = {
+                                    Box(modifier = Modifier.size(56.dp)) {
+                                        ProfileImage(url = otherUser.profilePictureUrl, name = otherUser.name)
+                                    }
+                                },
+                                text = { Text(otherUser.name, fontWeight = FontWeight.Bold) },
+                                secondaryText = {
+                                    Text(
+                                        lastMessage?.content ?: "Matched! Start the conversation!",
+                                        maxLines = 1,
+                                        color = Color.Gray
+                                    )
+                                }
+                            )
+                            Divider()
+                        }
+                    }
                 }
             }
         }
