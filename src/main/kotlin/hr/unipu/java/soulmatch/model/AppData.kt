@@ -36,7 +36,6 @@ object AppData {
     fun userDislikes(disliker: User, disliked: User) {
         disliker.dislikes.add(disliked.id)
         println("${disliker.name} disliked ${disliked.name}")
-        // AŽURIRANO: Pozivamo saveAllData
         saveAllData()
     }
 
