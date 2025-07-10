@@ -2,7 +2,7 @@
 
 ---
 
-## <a id="hrvatski"></a> 🇭🇷 Hrvatski
+## <a id="hrvatski"></a> Hrvatski
 
 # SoulMatch
 
@@ -30,7 +30,7 @@ Ovu aplikaciju razvile su:
 
 ---
 
-## <a id="english"></a> 🇬🇧 English
+## <a id="english"></a> English
 
 # SoulMatch
 
